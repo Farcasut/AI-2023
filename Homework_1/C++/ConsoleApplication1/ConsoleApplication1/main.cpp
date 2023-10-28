@@ -90,16 +90,13 @@ double manhattan_distance(const vector<vector<int>>& current_state, const vector
 
 void dfs(const vector<vector<int>>& matrix)
 {
-	int states = 0;
 	State initial_state(matrix);
-	stack<State> stack;
-	stack.push(initial_state);
+	stack<pair<State, uint32_t>> stack;
+	stack.push(std::make_pair(initial_state, 1));
 	set<vector<vector<int>>> visited_states;
-
 	while (!stack.empty())
 	{
-		State current_state = stack.top();
-		states++;
+		auto [current_state, states] = stack.top();
 		stack.pop();
 		if (current_state.is_final())
 		{
@@ -113,7 +110,7 @@ void dfs(const vector<vector<int>>& matrix)
 			State new_state = current_state.transition(neighbor);
 			if (!visited_states.count(new_state.get_matrix()))
 			{
-				stack.push(new_state);
+				stack.push(std::make_pair(new_state, states+1));
 			}
 		}
 	}
@@ -121,17 +118,15 @@ void dfs(const vector<vector<int>>& matrix)
 
 void bfs(const vector<vector<int>>& matrix)
 {
-	int states = 0;
 	State initial_state(matrix);
-	queue<State> stack;
-	stack.push(initial_state);
+	queue<pair<State, uint32_t>> stack;
+	stack.push(std::make_pair(initial_state,1));
 	set<vector<vector<int>>> visited_states;
 
 	while (!stack.empty())
 	{
-		State current_state = stack.front();
+		auto[ current_state, states ] = stack.front();
 		stack.pop();
-		states++;
 		if (current_state.is_final())
 		{
 			print_solution(current_state, states);
@@ -144,7 +139,7 @@ void bfs(const vector<vector<int>>& matrix)
 			if (!visited_states.count(new_state.get_matrix()))
 			{
 				visited_states.insert(current_state.get_matrix());
-				stack.push(new_state);
+				stack.push(std::make_pair(new_state, states+1));
 			}
 		}
 	}
@@ -156,19 +151,16 @@ bool dfs(const vector<vector<int>>& matrix, uint32_t max_depth)
 {
 	int states = 0;
 	State initial_state(matrix);
-	stack<pair<State, uint32_t>> stack;
-	stack.push(std::make_pair(initial_state, 0));
+	stack<pair<pair<State, uint32_t>, uint32_t>> stack;
+	stack.push(std::make_pair(std::make_pair(initial_state, 0), 1));
 	set<vector<vector<int>>> visited_states;
 
 	while (!stack.empty())
 	{
 		auto current_pair = stack.top();
 		stack.pop();
-		State current_state = current_pair.first;
-		uint32_t current_depth = current_pair.second;
-
-		states++;
-
+		auto [current_state, current_depth] = current_pair.first;
+		uint32_t states = current_pair.second;
 		if (current_state.is_final())
 		{
 			print_solution(current_state, states);
@@ -184,7 +176,7 @@ bool dfs(const vector<vector<int>>& matrix, uint32_t max_depth)
 			if (!visited_states.count(new_state.get_matrix()))
 			{
 				visited_states.insert(current_state.get_matrix());
-				stack.push(std::make_pair(new_state, current_depth + 1));
+				stack.push(std::make_pair(std::make_pair(new_state, current_depth + 1),states+1));
 			}
 		}
 	}
@@ -205,7 +197,7 @@ void idfs(vector<vector<int>> matrix, int32_t depth)
 void greedy(vector<vector<int>> matrix, double(*heuristic)(const vector<vector<int>>&, const vector<vector<int>>&))
 {
 	auto comparator = [](const auto& p1, const auto& p2) { return p1.first > p2.first; };
-	std::priority_queue<std::pair<double, State>, std::vector<std::pair<double, State>>, decltype(comparator)> minHeap(comparator);
+	std::priority_queue<std::pair<double, std::pair<State, uint32_t>>, std::vector<std::pair<double, std::pair<State, uint32_t>>>, decltype(comparator)> minHeap(comparator);
 	State initial_state(matrix);
 	vector<vector<int>> best_final = {};
 	vector<double> distances{};
@@ -224,16 +216,15 @@ void greedy(vector<vector<int>> matrix, double(*heuristic)(const vector<vector<i
 	Helper::set_digits();
 	Helper::final_state = final_states[index];
 	set<vector<vector<int>>> visited_states;
-	int steps = 0;
-	minHeap.push({ 0, initial_state });
+	minHeap.push({ 0, std::make_pair(initial_state, 1) });
 	while (!minHeap.empty())
 	{
- 		auto [discard, current_state] = minHeap.top();
+ 		auto [discard, pair] = minHeap.top();
+		auto [current_state, states] = pair;
 		minHeap.pop();
-		steps++;
 		if(current_state.is_final())
 		{
-			print_solution(current_state, steps);
+			print_solution(current_state, states);
 			return;
 		}
 		for(const auto& neighbor : current_state.get_neighbors())
@@ -241,7 +232,7 @@ void greedy(vector<vector<int>> matrix, double(*heuristic)(const vector<vector<i
 			State new_state = current_state.transition(neighbor);
 			if (!visited_states.count(new_state.get_matrix()))
 			{
-				minHeap.push(std::make_pair(heuristic(new_state.get_matrix(),Helper::final_state), new_state));
+				minHeap.push(std::make_pair(heuristic(new_state.get_matrix(),Helper::final_state), std::make_pair(new_state, states+1)));
 				visited_states.insert(current_state.get_matrix());
 			}
 		}
@@ -266,9 +257,9 @@ int main()
 	bfs({ {2,5,3},{1,0,6},{4,7,8} });
 	std::cout << "-------------------\n";
 	std::cout << "IDFS:\n";
-	idfs({ {8,6,7},{2,5,4},{0,3,1} }, 500);
-	idfs({ {2,7,5},{0,8,4},{3,1,6} }, 500);
-	idfs({ {2,5,3},{1,0,6},{4,7,8} }, 500);
+	idfs({ {8,6,7},{2,5,4},{0,3,1} }, 50);
+	idfs({ {2,7,5},{0,8,4},{3,1,6} }, 50);
+	idfs({ {2,5,3},{1,0,6},{4,7,8} }, 50);
 	std::cout << "-------------------\n";
 	std::cout << "Greedy-hamming_distance\n:";
 	greedy({{8,6,7},{0,5,4},{2,3,1} }, hamming_distance);
