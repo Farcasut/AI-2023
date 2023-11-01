@@ -45,7 +45,7 @@ bool is_complete(const vector<vector<int8_t>> &board) {
     //Check if the sudoku is complete;
     for (int i = 0; i < board.size(); i++) {
         unordered_set<uint8_t> row_set;
-        for (int j = 0; j < board[0].size(); ++j) {
+        for (int j = 0; j < board[i].size(); ++j) {
             if (board[i][j] == 0)
                 return false;
             // check the row set
