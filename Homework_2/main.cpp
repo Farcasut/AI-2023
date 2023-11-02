@@ -217,6 +217,33 @@ bool MRV(vector<vector<int8_t>>& board, MostConstraint constrainer)
     return false;
 }
 
+vector<vector<unordered_set<int>>> init_domains(const vector<vector<int8_t>>& board)
+{
+    vector<vector<unordered_set<int>>> domains(9, vector<unordered_set<int>>(9, {1,2,3,4,5,6,7,8,9}));
+    vector<pair<int, int>> constraint_even_positions = { {2,2}, {0, 6}, {2,8}, {3, 4}, {4,3}, {4,5}, {5, 4}, {6,0}, {6, 6}, {8,2} };
+    for (const auto& [line, column] : constraint_even_positions) {
+        domains[line][column] = {2, 4, 6, 8};
+    }
+    for (int i = 0; i < 9; ++i) {
+        for (int j = 0; j < 9; ++j) {
+            if (board[i][j] != 0) {
+                domains = remove_from_domain(domains, i, j, board[i][j]);
+            }
+        }
+    }
+    return domains;
+}
+MostConstraint init_mrv(vector<vector<unordered_set<int>>> domains)
+{
+    MostConstraint x{};
+    for (int i = 0; i < domains.size(); i++) {
+        for(int j = 0; j < domains[i].size(); j++) {
+            x.push({i, j}, domains[i][j]);
+        }
+    }
+    x.sort();
+    return x;
+}
 int main() {
     vector<vector<int8_t>> correctSudoku = {
         {8, 4, 0, 0, 5, 0, 0, 0, 0},
@@ -230,36 +257,14 @@ int main() {
         {0, 0, 0, 0, 2, 0, 0, 1, 3}
     };
 
-    vector<pair<int, int>> constraint_even_positions = { {2,2}, {0, 6}, {2,8}, {3, 4}, {4,3}, {4,5}, {5, 4}, {6,0}, {6, 6}, {8,2} };
-
-    vector<vector<unordered_set<int>>> domains(9, vector<unordered_set<int>>(9, {1,2,3,4,5,6,7,8,9}));
-
-    for (const auto& [line, column] : constraint_even_positions) {
-        domains[line][column] = {2, 4, 6, 8};
-    }
-
-    for (int i = 0; i < 9; ++i) {
-        for (int j = 0; j < 9; ++j) {
-            if (correctSudoku[i][j] != 0) {
-                domains = remove_from_domain(domains, i, j, correctSudoku[i][j]);
-            }
-        }
-    }
-
-    MostConstraint x{};
-    for (int i = 0; i < domains.size(); i++) {
-        for(int j = 0; j < domains[i].size(); j++) {
-            x.push({i, j}, domains[i][j]);
-        }
-    }
-    x.sort(); 
-
+    vector<vector<unordered_set<int>>> domains = init_domains(correctSudoku);
+    auto constrains = init_mrv(domains);
     //    std::cout << simple_bkt(correctSudoku) << std::endl;
     const auto s1{std::chrono::steady_clock::now()};
     std::cout << forward_checking(correctSudoku, domains) << std::endl;
     const auto e1{std::chrono::steady_clock::now()};
     const auto s2{std::chrono::steady_clock::now()};
-    std::cout << MRV(correctSudoku, x) << std::endl;
+    std::cout << MRV(correctSudoku, constrains) << std::endl;
     const auto e2{std::chrono::steady_clock::now()};
     const std::chrono::duration<double> elapsed_seconds1{e1 - s1};
     const std::chrono::duration<double> elapsed_seconds2{e2 - s2};
